@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useLanguage } from './LanguageContext';
 import { countryNames } from './LanguageContext'; // 导入countryNames对象
+import LawyerAd from './LawyerAd';
 
 // 扩展接口，支持更多属性
 interface ShareCardProps {
@@ -46,11 +47,23 @@ interface ShareCardProps {
   education: string;
   workYears: string;
   jobStability: string;
+  promotionCycle: string;
+  equityValue: string;
+  isPublic: boolean;
   
   // 新增属性
   hasShuttle: boolean;
   hasCanteen: boolean;
 }
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+const getConfidenceFactor = (isPublic: boolean) => (isPublic ? 0.8 : 0.3);
+
+const getPromotionFactor = (promotionCycle: string) => {
+  const cycle = parseFloat(promotionCycle) || 3;
+  return clamp(3 / cycle, 0.5, 2.0);
+};
 
 // 将中文评级转换为翻译键
 const getAssessmentKey = (assessment: string): string => {
@@ -213,12 +226,21 @@ const getCountryName = (countryCode: string, currentLanguage: string): string =>
   return countryNames.zh[countryCode] || countryCode || '未知';
 };
 
+const formatNumber = (value: number) => {
+  if (!Number.isFinite(value)) return '0';
+  return value.toLocaleString(undefined, {
+    maximumFractionDigits: value >= 100 ? 0 : 2,
+    minimumFractionDigits: value > 0 && value < 100 ? 2 : 0,
+  });
+};
+
 const ShareCard: React.FC<ShareCardProps> = (props) => {
   const reportRef = useRef<HTMLDivElement>(null);
   const simpleReportRef = useRef<HTMLDivElement>(null); // 添加简化版报告的引用
   const [isDownloading, setIsDownloading] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
   const { t, language } = useLanguage();
+  const shouldHighlightLawyerAd = parseFloat(props.value) < 1 || props.jobStability === 'private';
   
   // 客户端渲染标志
   const [isClient, setIsClient] = useState(false);
@@ -488,8 +510,42 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
         { label: t('share_contract_type_label'), value: getJobStabilityDesc(jobStability, t) }
       ]
     });
+
+    // 7. 未来价值评价
+    const promotionFactor = getPromotionFactor(props.promotionCycle);
+    const confidenceFactor = getConfidenceFactor(props.isPublic);
+    const equityContribution = parseFloat(props.equityValue || '0') * confidenceFactor;
+    const adjustedAnnualComp = parseFloat(props.dailySalary || '0') * parseFloat(props.workDaysPerYear || '0');
+    const equityRatio = adjustedAnnualComp > 0 ? equityContribution / adjustedAnnualComp : 0;
+
+    let futureComment = '';
+    if (promotionFactor > 1) {
+      futureComment = t('share_future_value_fast');
+    } else if (promotionFactor < 0.9) {
+      futureComment = t('share_future_value_slow');
+    } else {
+      futureComment = t('share_future_value_balanced');
+    }
+
+    if (equityRatio >= 0.2) {
+      futureComment += ' ' + t('share_future_value_equity_rich');
+    } else if (equityContribution > 0) {
+      futureComment += ' ' + t('share_future_value_equity_present');
+    }
+
+    comments.push({
+      title: t('share_future_value'),
+      content: futureComment,
+      emoji: promotionFactor > 1 || equityRatio >= 0.2 ? '🚀' : '📈',
+      details: [
+        { label: t('share_promotion_cycle_label'), value: `${props.promotionCycle}${t('share_year_unit')}` },
+        { label: t('share_promotion_factor_label'), value: `${promotionFactor.toFixed(2)}x` },
+        { label: t('share_equity_value_label'), value: `${props.currencySymbol}${formatNumber(parseFloat(props.equityValue || '0'))}` },
+        { label: t('share_equity_realization_label'), value: props.isPublic ? t('share_yes') : t('share_no') }
+      ]
+    });
     
-    // 7. 薪资评价
+    // 8. 薪资评价
     const dailySalary = props.dailySalary;
     const isYuan = props.isYuan === 'true';
     
@@ -530,7 +586,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
       ]
     });
     
-    // 8. 总结性价比评价
+    // 9. 总结性价比评价
     let valueComment = "";
     if (valueNum < 1.0) {
       valueComment = t('share_value_low');
@@ -651,37 +707,42 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
         {/* 性价比评语卡片 - 移动端更紧凑 */}
         <div className="space-y-4 md:space-y-6">
           {isClient && personalizedComments.map((comment, index) => (
-            <div key={index} className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg md:rounded-xl p-3 md:p-5 shadow-sm transition-all hover:shadow-md">
-              <div className="flex items-start gap-2.5 md:gap-4">
-                <div className="text-2xl md:text-4xl flex-shrink-0 mt-0.5">{comment.emoji}</div>
-                <div className="flex-1">
-                  <h3 className="text-base md:text-lg font-bold mb-1 md:mb-2 text-gray-800">{comment.title}</h3>
-                  <p className="text-xs md:text-sm text-gray-700 leading-relaxed mb-2 md:mb-3">{comment.content}</p>
-                  
-                  {/* 用户选项详情 - 移动端使用行内排列 */}
-                  {comment.details && comment.details.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-gray-200">
-                      <div className={isMobile ? "flex flex-wrap gap-x-4 gap-y-1.5" : "grid grid-cols-2 gap-2"}>
-                        {comment.details.map((detail, i) => (
-                          isMobile ? (
-                            <div key={i} className="flex items-center text-xs">
-                              <span className="text-gray-500 mr-1">{detail.label}:</span>
-                              <span className="font-medium text-gray-800">{detail.value}</span>
-                            </div>
-                          ) : (
-                            <div key={i} className="flex justify-between items-center">
-                              <span className="text-xs text-gray-500">{detail.label}</span>
-                              <span className="text-xs md:text-sm font-medium text-gray-800">{detail.value}</span>
-                            </div>
-                          )
-                        ))}
+            <React.Fragment key={index}>
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg md:rounded-xl p-3 md:p-5 shadow-sm transition-all hover:shadow-md">
+                <div className="flex items-start gap-2.5 md:gap-4">
+                  <div className="text-2xl md:text-4xl flex-shrink-0 mt-0.5">{comment.emoji}</div>
+                  <div className="flex-1">
+                    <h3 className="text-base md:text-lg font-bold mb-1 md:mb-2 text-gray-800">{comment.title}</h3>
+                    <p className="text-xs md:text-sm text-gray-700 leading-relaxed mb-2 md:mb-3">{comment.content}</p>
+                    
+                    {/* 用户选项详情 - 移动端使用行内排列 */}
+                    {comment.details && comment.details.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-gray-200">
+                        <div className={isMobile ? "flex flex-wrap gap-x-4 gap-y-1.5" : "grid grid-cols-2 gap-2"}>
+                          {comment.details.map((detail, i) => (
+                            isMobile ? (
+                              <div key={i} className="flex items-center text-xs">
+                                <span className="text-gray-500 mr-1">{detail.label}:</span>
+                                <span className="font-medium text-gray-800">{detail.value}</span>
+                              </div>
+                            ) : (
+                              <div key={i} className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500">{detail.label}</span>
+                                <span className="text-xs md:text-sm font-medium text-gray-800">{detail.value}</span>
+                              </div>
+                            )
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+
+            </React.Fragment>
           ))}
+
+          <LawyerAd highlight={shouldHighlightLawyerAd} />
         </div>
         
         {/* 底部信息 - 更小的文字 */}
@@ -750,6 +811,10 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
                       <div className="bg-gray-50 p-3 rounded-lg">
                         <div className="text-sm text-gray-500">{t('share_working_days_per_year')}</div>
                         <div className="font-medium text-gray-800 mt-1">{props.workDaysPerYear} {t('share_days')}</div>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="text-sm text-gray-500">{t('share_future_value')}</div>
+                        <div className="font-medium text-gray-800 mt-1">{getPromotionFactor(props.promotionCycle).toFixed(2)}x</div>
                       </div>
                     </div>
                   </div>
@@ -833,6 +898,31 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
                       <div className="bg-gray-50 p-3 rounded-lg">
                         <div className="text-sm text-gray-500">{t('share_contract_type_label')}</div>
                         <div className="font-medium text-gray-800 mt-1">{getJobStabilityDesc(props.jobStability, t)}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 未来价值 */}
+                  <div className="col-span-2 mt-2">
+                    <h2 className="font-bold text-gray-800 text-lg pb-2 mb-3 border-b border-gray-200 flex items-center">
+                      <span className="mr-2">🚀</span> {t('share_future_value')}
+                    </h2>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="text-sm text-gray-500">{t('share_promotion_cycle_label')}</div>
+                        <div className="font-medium text-gray-800 mt-1">{props.promotionCycle}{t('share_year_unit')}</div>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="text-sm text-gray-500">{t('share_promotion_factor_label')}</div>
+                        <div className="font-medium text-gray-800 mt-1">{getPromotionFactor(props.promotionCycle).toFixed(2)}x</div>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="text-sm text-gray-500">{t('share_equity_value_label')}</div>
+                        <div className="font-medium text-gray-800 mt-1">{props.currencySymbol}{formatNumber(parseFloat(props.equityValue || '0'))}</div>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="text-sm text-gray-500">{t('share_equity_realization_label')}</div>
+                        <div className="font-medium text-gray-800 mt-1">{props.isPublic ? t('share_yes') : t('share_no')}</div>
                       </div>
                     </div>
                   </div>

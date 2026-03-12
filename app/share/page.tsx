@@ -52,6 +52,9 @@ function ShareCardWrapper() {
   const education = searchParams.get('education') || '1.2';
   const workYears = searchParams.get('workYears') || '0';
   const jobStability = searchParams.get('jobStability') || 'private';
+  const promotionCycle = searchParams.get('promotionCycle') || '3';
+  const equityValue = searchParams.get('equityValue') || '0';
+  const isPublic = searchParams.get('isPublic') === 'true';
   
   return (
     <div>
@@ -95,6 +98,9 @@ function ShareCardWrapper() {
         education={education}
         workYears={workYears}
         jobStability={jobStability}
+        promotionCycle={promotionCycle}
+        equityValue={equityValue}
+        isPublic={isPublic}
       />
     </div>
   );
