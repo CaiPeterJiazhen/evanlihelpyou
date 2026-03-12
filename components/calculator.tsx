@@ -337,6 +337,9 @@ interface HistoryItem {
   workYears: string;
   jobStability: string;
   bachelorType: string;
+  promotionCycle: string;
+  equityValue: string;
+  isPublic: boolean;
   hasShuttle: boolean;
   hasCanteen: boolean;
 }
@@ -366,6 +369,9 @@ interface FormData {
   canteen: string;
   jobStability: string;
   education: string;
+  promotionCycle: string;
+  equityValue: string;
+  isPublic: boolean;
   hasShuttle: boolean;
   hasCanteen: boolean;
 }
@@ -378,6 +384,24 @@ interface Result {
   assessment: string;
   assessmentColor: string;
 }
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+const getConfidenceFactor = (isPublic: boolean) => (isPublic ? 0.8 : 0.3);
+
+const getPromotionFactor = (promotionCycle: string) => {
+  const cycle = Number(promotionCycle) || 3;
+  return clamp(3 / cycle, 0.5, 2.0);
+};
+
+const formatDisplayNumber = (value: number) => {
+  if (!Number.isFinite(value)) return '0';
+
+  return value.toLocaleString(undefined, {
+    maximumFractionDigits: value >= 100 ? 0 : 2,
+    minimumFractionDigits: value > 0 && value < 100 ? 2 : 0,
+  });
+};
 
 const SalaryCalculator = () => {
   // 获取语言上下文
@@ -396,14 +420,6 @@ const SalaryCalculator = () => {
   // 在组件挂载时标记为浏览器环境
   useEffect(() => {
     setIsBrowser(true);
-    
-    // 在客户端环境中执行重定向
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      if (hostname !== 'worthjob.zippland.com' && hostname !== 'localhost' && !hostname.includes('127.0.0.1')) {
-        window.location.href = 'https://worthjob.zippland.com' + window.location.pathname;
-      }
-    }
   }, []);
   
   // 添加用于创建分享图片的引用
@@ -434,6 +450,9 @@ const SalaryCalculator = () => {
     canteen: '1.0',
     jobStability: 'private',   // 新增：工作稳定度/类型
     education: '1.0',
+    promotionCycle: '3',
+    equityValue: '0',
+    isPublic: false,
     hasShuttle: false,         // 确保这是一个明确的布尔值
     hasCanteen: false,         // 确保这是一个明确的布尔值
   });
@@ -511,6 +530,9 @@ const SalaryCalculator = () => {
             workYears: item.workYears || formData.workYears,
             jobStability: item.jobStability || formData.jobStability,
             bachelorType: item.bachelorType || formData.bachelorType,
+            promotionCycle: item.promotionCycle || formData.promotionCycle,
+            equityValue: item.equityValue || formData.equityValue,
+            isPublic: typeof item.isPublic === 'boolean' ? item.isPublic : false,
             // 确保 hasShuttle 和 hasCanteen 有合法的布尔值，即使历史记录中没有这些字段
             hasShuttle: typeof item.hasShuttle === 'boolean' ? item.hasShuttle : false,
             hasCanteen: typeof item.hasCanteen === 'boolean' ? item.hasCanteen : false,
@@ -609,15 +631,17 @@ const SalaryCalculator = () => {
   const calculateDailySalary = useCallback(() => {
     if (!formData.salary) return 0;
     const workingDays = calculateWorkingDays();
+    const confidenceFactor = getConfidenceFactor(formData.isPublic);
+    const adjustedTotalSalary = Number(formData.salary) + Number(formData.equityValue || 0) * confidenceFactor;
     
     // 应用PPP转换因子标准化薪资
     // 如果选择了非中国地区，使用选定国家的PPP；否则使用中国默认值4.19
     const isNonChina = selectedCountry !== 'CN';
     const pppFactor = isNonChina ? pppFactors[selectedCountry] || 4.19 : 4.19;
-    const standardizedSalary = Number(formData.salary) * (4.19 / pppFactor);
+    const standardizedSalary = adjustedTotalSalary * (4.19 / pppFactor);
     
     return standardizedSalary / workingDays; // 除 0 不管, Infinity(爽到爆炸)!
-  }, [formData.salary, selectedCountry, calculateWorkingDays]);
+  }, [formData.salary, formData.equityValue, formData.isPublic, selectedCountry, calculateWorkingDays]);
 
   // 新增：获取显示用的日薪（转回原始货币）
   const getDisplaySalary = useCallback(() => {
@@ -656,6 +680,7 @@ const SalaryCalculator = () => {
     if (!formData.salary) return 0;
     
     const dailySalary = calculateDailySalary();
+    const promotionFactor = getPromotionFactor(formData.promotionCycle);
     const workHours = Number(formData.workHours);
     const commuteHours = Number(formData.commuteHours);
     const restTime = Number(formData.restTime);
@@ -744,11 +769,15 @@ const SalaryCalculator = () => {
     
     // 薪资满意度应该受到经验薪资倍数的影响
     // 相同薪资，对于高经验者来说价值更低，对应的计算公式需要考虑经验倍数
-    return (dailySalary * environmentFactor) / 
-           (35 * (workHours + effectiveCommuteHours - 0.5 * restTime) * Number(formData.education) * experienceSalaryMultiplier);
+    const costFactor = 35 * (workHours + effectiveCommuteHours - 0.5 * restTime) * Number(formData.education) * experienceSalaryMultiplier;
+
+    return (dailySalary * promotionFactor * environmentFactor) / costFactor;
   };
 
   const value = calculateValue();
+  const promotionFactor = getPromotionFactor(formData.promotionCycle);
+  const confidenceFactor = getConfidenceFactor(formData.isPublic);
+  const realizedEquityValue = Number(formData.equityValue || 0) * confidenceFactor;
   
   const getValueAssessment = useCallback(() => {
     if (!formData.salary) return { text: t('rating_enter_salary'), color: "text-gray-500" };
@@ -913,6 +942,9 @@ const SalaryCalculator = () => {
       workYears: formData.workYears,
       jobStability: formData.jobStability,
       bachelorType: formData.bachelorType,
+      promotionCycle: formData.promotionCycle,
+      equityValue: formData.equityValue,
+      isPublic: formData.isPublic,
       hasShuttle: formData.hasShuttle,
       hasCanteen: formData.hasCanteen,
     };
@@ -1095,6 +1127,9 @@ const SalaryCalculator = () => {
                                 workYears: item.workYears,
                                 jobStability: item.jobStability,
                                 bachelorType: item.bachelorType,
+                                promotionCycle: item.promotionCycle,
+                                equityValue: item.equityValue,
+                                isPublic: typeof item.isPublic === 'boolean' ? item.isPublic : false,
                                 // 确保 hasShuttle 和 hasCanteen 有合法的布尔值
                                 hasShuttle: typeof item.hasShuttle === 'boolean' ? item.hasShuttle : false,
                                 hasCanteen: typeof item.hasCanteen === 'boolean' ? item.hasCanteen : false,
@@ -1144,8 +1179,12 @@ const SalaryCalculator = () => {
                                 workYears: item.workYears,
                                 jobStability: item.jobStability,
                                 bachelorType: item.bachelorType,
+                                promotionCycle: item.promotionCycle,
+                                equityValue: item.equityValue,
+                                isPublic: item.isPublic,
                                 countryCode: item.countryCode,
                                 countryName: getCountryName(item.countryCode),
+                                currencySymbol: getCurrencySymbol(item.countryCode),
                                 hasShuttle: item.hasShuttle,
                                 hasCanteen: item.hasCanteen,
                               }
@@ -1467,6 +1506,51 @@ const SalaryCalculator = () => {
                 { label: t('job_freelance'), value: 'freelance' },
               ]}
             />
+
+            <div className="space-y-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/40 p-4">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">{t('career_outlook')}</h3>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('career_outlook_hint')}</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('promotion_cycle')}</label>
+                  <select
+                    value={formData.promotionCycle}
+                    onChange={(e) => handleInputChange('promotionCycle', e.target.value)}
+                    className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+                  >
+                    <option value="1">{t('promotion_cycle_1')}</option>
+                    <option value="2">{t('promotion_cycle_2')}</option>
+                    <option value="3">{t('promotion_cycle_3')}</option>
+                    <option value="5">{t('promotion_cycle_5')}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('annual_equity_value')}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.equityValue}
+                    onChange={(e) => handleInputChange('equityValue', e.target.value)}
+                    placeholder="0"
+                    className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={formData.isPublic}
+                  onChange={(e) => handleInputChange('isPublic', e.target.checked)}
+                  className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                />
+                {t('is_public_company')}
+              </label>
+            </div>
             
             <RadioGroup
               label={t('work_environment')}
@@ -1601,7 +1685,7 @@ const SalaryCalculator = () => {
 
       {/* 结果卡片优化 */}
       <div ref={shareResultsRef} className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-xl p-6 shadow-inner">
-        <div className="grid grid-cols-3 gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           <div>
             <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('working_days_per_year')}</div>
             <div className="text-2xl font-semibold mt-1 text-gray-900 dark:text-white">{calculateWorkingDays()}{t('days_unit')}</div>
@@ -1617,6 +1701,16 @@ const SalaryCalculator = () => {
             <div className={`text-2xl font-semibold mt-1 ${getValueAssessment().color}`}>
               {value.toFixed(2)}
               <span className="text-base ml-2">({getValueAssessment().text})</span>
+            </div>
+          </div>
+          <div>
+            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('share_future_value')}</div>
+            <div className="text-2xl font-semibold mt-1 text-gray-900 dark:text-white">{promotionFactor.toFixed(2)}x</div>
+            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {t('share_promotion_cycle_label')} {formData.promotionCycle}{t('share_year_unit')}
+            </div>
+            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {t('share_equity_value_label')} {getCurrencySymbol(selectedCountry)}{formatDisplayNumber(realizedEquityValue)}
             </div>
           </div>
         </div>
@@ -1654,6 +1748,9 @@ const SalaryCalculator = () => {
                 workYears: formData.workYears,
                 jobStability: formData.jobStability,
                 bachelorType: formData.bachelorType,
+                promotionCycle: formData.promotionCycle,
+                equityValue: formData.equityValue,
+                isPublic: formData.isPublic,
                 countryCode: selectedCountry,
                 countryName: getCountryName(selectedCountry),
                 currencySymbol: getCurrencySymbol(selectedCountry),

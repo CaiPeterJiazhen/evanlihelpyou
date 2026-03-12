@@ -17,8 +17,8 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: "Job Worth Calculator",
-    template: "%s | Job Worth Calculator"
+    default: "李律帮你看这b班上得值不值",
+    template: "%s | 李律帮你看这b班上得值不值"
   },
   alternates: {
     languages: {
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
       "zh-CN": "/",
     },
   },
-  description: "这b班上得值不值 - 计算你的工作性价比 | Job Worth Calculator - Calculate your job's value",
+  description: "李律帮你看这b班上得值不值，计算你的工作性价比、未来价值与职业回报。",
   verification: {
     google: "_OQGiIpYz87USAsgJV2C07-JJhQ8myV_4GoM1kDjFic",
   },
