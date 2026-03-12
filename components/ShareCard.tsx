@@ -240,6 +240,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
   const { t, language } = useLanguage();
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
   const shouldHighlightLawyerAd = parseFloat(props.value) < 1 || props.jobStability === 'private';
   
   // 客户端渲染标志
@@ -957,7 +958,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
                     <img 
-                      src="/title.png" 
+                      src={`${basePath}/title.png`} 
                       alt="Job Worth Calculator" 
                       className="h-20 mr-3"
                     />
@@ -967,7 +968,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
                     </div>
                   </div>
                   <img 
-                    src="/website.png" 
+                    src={`${basePath}/website.png`} 
                     alt=""
                     className="h-16 w-16 opacity-85" 
                   />

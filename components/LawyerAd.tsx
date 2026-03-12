@@ -11,7 +11,7 @@ interface LawyerAdProps {
 
 const LawyerAd: React.FC<LawyerAdProps> = ({
   highlight = false,
-  imageSrc = '/lawyer-ad-evan.jpg',
+  imageSrc = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/lawyer-ad-evan.jpg`,
 }) => {
   const { t } = useLanguage();
   const [imageFailed, setImageFailed] = useState(false);
