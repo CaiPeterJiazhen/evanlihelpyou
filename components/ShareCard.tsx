@@ -514,8 +514,9 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
 
     // 7. 未来价值评价
     const promotionFactor = getPromotionFactor(props.promotionCycle);
+    const hasEquity = parseFloat(props.equityValue || '0') > 0;
     const confidenceFactor = getConfidenceFactor(props.isPublic);
-    const equityContribution = parseFloat(props.equityValue || '0') * confidenceFactor;
+    const equityContribution = hasEquity ? parseFloat(props.equityValue || '0') * confidenceFactor : 0;
     const adjustedAnnualComp = parseFloat(props.dailySalary || '0') * parseFloat(props.workDaysPerYear || '0');
     const equityRatio = adjustedAnnualComp > 0 ? equityContribution / adjustedAnnualComp : 0;
 
@@ -528,22 +529,33 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
       futureComment = t('share_future_value_balanced');
     }
 
-    if (equityRatio >= 0.2) {
+    if (hasEquity && equityRatio >= 0.2) {
       futureComment += ' ' + t('share_future_value_equity_rich');
-    } else if (equityContribution > 0) {
+    } else if (hasEquity && equityContribution > 0) {
       futureComment += ' ' + t('share_future_value_equity_present');
+    }
+
+    if (hasEquity) {
+      futureComment += ' ' + t('share_equity_bonus_applied');
+    }
+
+    const futureDetails = [
+      { label: t('share_promotion_cycle_label'), value: `${props.promotionCycle}${t('share_year_unit')}` },
+      { label: t('share_promotion_factor_label'), value: `${promotionFactor.toFixed(2)}x` },
+    ];
+
+    if (hasEquity) {
+      futureDetails.push(
+        { label: t('share_equity_value_label'), value: `${props.currencySymbol}${formatNumber(parseFloat(props.equityValue || '0'))}` },
+        { label: t('share_equity_realization_label'), value: props.isPublic ? t('share_yes') : t('share_no') }
+      );
     }
 
     comments.push({
       title: t('share_future_value'),
       content: futureComment,
       emoji: promotionFactor > 1 || equityRatio >= 0.2 ? '🚀' : '📈',
-      details: [
-        { label: t('share_promotion_cycle_label'), value: `${props.promotionCycle}${t('share_year_unit')}` },
-        { label: t('share_promotion_factor_label'), value: `${promotionFactor.toFixed(2)}x` },
-        { label: t('share_equity_value_label'), value: `${props.currencySymbol}${formatNumber(parseFloat(props.equityValue || '0'))}` },
-        { label: t('share_equity_realization_label'), value: props.isPublic ? t('share_yes') : t('share_no') }
-      ]
+      details: futureDetails
     });
     
     // 8. 薪资评价
@@ -917,14 +929,18 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
                         <div className="text-sm text-gray-500">{t('share_promotion_factor_label')}</div>
                         <div className="font-medium text-gray-800 mt-1">{getPromotionFactor(props.promotionCycle).toFixed(2)}x</div>
                       </div>
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <div className="text-sm text-gray-500">{t('share_equity_value_label')}</div>
-                        <div className="font-medium text-gray-800 mt-1">{props.currencySymbol}{formatNumber(parseFloat(props.equityValue || '0'))}</div>
-                      </div>
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <div className="text-sm text-gray-500">{t('share_equity_realization_label')}</div>
-                        <div className="font-medium text-gray-800 mt-1">{props.isPublic ? t('share_yes') : t('share_no')}</div>
-                      </div>
+                      {parseFloat(props.equityValue || '0') > 0 && (
+                        <>
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-sm text-gray-500">{t('share_equity_value_label')}</div>
+                            <div className="font-medium text-gray-800 mt-1">{props.currencySymbol}{formatNumber(parseFloat(props.equityValue || '0'))}</div>
+                          </div>
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-sm text-gray-500">{t('share_equity_realization_label')}</div>
+                            <div className="font-medium text-gray-800 mt-1">{props.isPublic ? t('share_yes') : t('share_no')}</div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                   

@@ -388,6 +388,20 @@ interface Result {
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
 const getConfidenceFactor = (isPublic: boolean) => (isPublic ? 0.8 : 0.3);
+const EQUITY_BONUS_WEIGHT = 0.1;
+const EQUITY_BONUS_CAP = 1.15;
+
+const getEquityBonusFactor = (salary: string, equityValue: string, isPublic: boolean) => {
+  const cashSalary = Number(salary);
+  const equity = Number(equityValue);
+
+  if (!Number.isFinite(cashSalary) || cashSalary <= 0) return 1.0;
+  if (!Number.isFinite(equity) || equity <= 0) return 1.0;
+
+  const ratio = equity / cashSalary;
+  const bonus = ratio * getConfidenceFactor(isPublic) * EQUITY_BONUS_WEIGHT;
+  return clamp(1 + bonus, 1, EQUITY_BONUS_CAP);
+};
 
 const getPromotionFactor = (promotionCycle: string) => {
   const cycle = Number(promotionCycle) || 3;
@@ -631,17 +645,18 @@ const SalaryCalculator = () => {
   const calculateDailySalary = useCallback(() => {
     if (!formData.salary) return 0;
     const workingDays = calculateWorkingDays();
-    const confidenceFactor = getConfidenceFactor(formData.isPublic);
-    const adjustedTotalSalary = Number(formData.salary) + Number(formData.equityValue || 0) * confidenceFactor;
+    if (workingDays <= 0) return 0;
+    const cashSalary = Number(formData.salary);
+    if (!Number.isFinite(cashSalary) || cashSalary <= 0) return 0;
     
     // 应用PPP转换因子标准化薪资
     // 如果选择了非中国地区，使用选定国家的PPP；否则使用中国默认值4.19
     const isNonChina = selectedCountry !== 'CN';
     const pppFactor = isNonChina ? pppFactors[selectedCountry] || 4.19 : 4.19;
-    const standardizedSalary = adjustedTotalSalary * (4.19 / pppFactor);
+    const standardizedSalary = cashSalary * (4.19 / pppFactor);
     
-    return standardizedSalary / workingDays; // 除 0 不管, Infinity(爽到爆炸)!
-  }, [formData.salary, formData.equityValue, formData.isPublic, selectedCountry, calculateWorkingDays]);
+    return standardizedSalary / workingDays;
+  }, [formData.salary, selectedCountry, calculateWorkingDays]);
 
   // 新增：获取显示用的日薪（转回原始货币）
   const getDisplaySalary = useCallback(() => {
@@ -681,6 +696,7 @@ const SalaryCalculator = () => {
     
     const dailySalary = calculateDailySalary();
     const promotionFactor = getPromotionFactor(formData.promotionCycle);
+    const equityBonusFactor = getEquityBonusFactor(formData.salary, formData.equityValue, formData.isPublic);
     const workHours = Number(formData.workHours);
     const commuteHours = Number(formData.commuteHours);
     const restTime = Number(formData.restTime);
@@ -771,13 +787,15 @@ const SalaryCalculator = () => {
     // 相同薪资，对于高经验者来说价值更低，对应的计算公式需要考虑经验倍数
     const costFactor = 35 * (workHours + effectiveCommuteHours - 0.5 * restTime) * Number(formData.education) * experienceSalaryMultiplier;
 
-    return (dailySalary * promotionFactor * environmentFactor) / costFactor;
+    return (dailySalary * promotionFactor * environmentFactor * equityBonusFactor) / costFactor;
   };
 
   const value = calculateValue();
+  const hasEquityInput = Number(formData.equityValue) > 0;
   const promotionFactor = getPromotionFactor(formData.promotionCycle);
   const confidenceFactor = getConfidenceFactor(formData.isPublic);
   const realizedEquityValue = Number(formData.equityValue || 0) * confidenceFactor;
+  const equityBonusFactor = getEquityBonusFactor(formData.salary, formData.equityValue, formData.isPublic);
   
   const getValueAssessment = useCallback(() => {
     if (!formData.salary) return { text: t('rating_enter_salary'), color: "text-gray-500" };
@@ -1529,13 +1547,13 @@ const SalaryCalculator = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('annual_equity_value')}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('annual_equity_value')} ({t('optional')})</label>
                   <input
                     type="number"
                     min="0"
                     value={formData.equityValue}
                     onChange={(e) => handleInputChange('equityValue', e.target.value)}
-                    placeholder="0"
+                    placeholder={t('equity_optional_placeholder')}
                     className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
                   />
                 </div>
@@ -1709,9 +1727,16 @@ const SalaryCalculator = () => {
             <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {t('share_promotion_cycle_label')} {formData.promotionCycle}{t('share_year_unit')}
             </div>
-            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {t('share_equity_value_label')} {getCurrencySymbol(selectedCountry)}{formatDisplayNumber(realizedEquityValue)}
-            </div>
+            {hasEquityInput && (
+              <>
+                <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {t('share_equity_value_label')} {getCurrencySymbol(selectedCountry)}{formatDisplayNumber(realizedEquityValue)}
+                </div>
+                <div className="mt-1 text-xs text-green-600 dark:text-green-400">
+                  {t('share_equity_bonus_applied')} (+{((equityBonusFactor - 1) * 100).toFixed(1)}%)
+                </div>
+              </>
+            )}
           </div>
         </div>
         
