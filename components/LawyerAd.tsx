@@ -11,7 +11,7 @@ interface LawyerAdProps {
 
 const LawyerAd: React.FC<LawyerAdProps> = ({
   highlight = false,
-  imageSrc = '/微信图片_20260312170943_197_158.jpg',
+  imageSrc = '/lawyer-ad-evan.jpg',
 }) => {
   const { t } = useLanguage();
   const [imageFailed, setImageFailed] = useState(false);
