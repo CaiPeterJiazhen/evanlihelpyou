@@ -1,16 +1,15 @@
-"use client";
+﻿"use client";
 
 import React, { useRef, useState, useEffect } from 'react';
 import { ArrowLeft, Download } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useLanguage } from './LanguageContext';
-import { countryNames } from './LanguageContext'; // 导入countryNames对象
-import LawyerAd from './LawyerAd';
+import { countryNames } from './LanguageContext'; // 瀵煎叆countryNames瀵硅薄
 
-// 扩展接口，支持更多属性
+// 鎵╁睍鎺ュ彛锛屾敮鎸佹洿澶氬睘鎬?
 interface ShareCardProps {
-  // 基础数据
+  // 鍩虹鏁版嵁
   value: string;
   assessment: string;
   assessmentColor: string;
@@ -25,14 +24,14 @@ interface ShareCardProps {
   countryName: string;
   currencySymbol: string;
   
-  // 详细工作信息
+  // 璇︾粏宸ヤ綔淇℃伅
   workDaysPerWeek: string;
   wfhDaysPerWeek: string;
   annualLeave: string;
   paidSickLeave: string;
   publicHolidays: string;
   
-  // 工作环境
+  // 宸ヤ綔鐜
   workEnvironment: string;
   leadership: string;
   teamwork: string;
@@ -40,7 +39,7 @@ interface ShareCardProps {
   shuttle: string;
   canteen: string;
   
-  // 学历和工作经验
+  // 瀛﹀巻鍜屽伐浣滅粡楠?
   degreeType: string;
   schoolType: string;
   bachelorType: string;
@@ -51,7 +50,7 @@ interface ShareCardProps {
   equityValue: string;
   isPublic: boolean;
   
-  // 新增属性
+  // 鏂板灞炴€?
   hasShuttle: boolean;
   hasCanteen: boolean;
 }
@@ -65,28 +64,28 @@ const getPromotionFactor = (promotionCycle: string) => {
   return clamp(3 / cycle, 0.5, 2.0);
 };
 
-// 将中文评级转换为翻译键
+// 灏嗕腑鏂囪瘎绾ц浆鎹负缈昏瘧閿?
 const getAssessmentKey = (assessment: string): string => {
-  // 如果已经是翻译键，直接返回
+  // 濡傛灉宸茬粡鏄炕璇戦敭锛岀洿鎺ヨ繑鍥?
   if (assessment.startsWith('rating_')) {
     return assessment;
   }
   
-  // 否则，将中文评级转换为翻译键
+  // 鍚﹀垯锛屽皢涓枃璇勭骇杞崲涓虹炕璇戦敭
   switch (assessment) {
-    case '惨绝人寰': return 'rating_terrible';
-    case '略惨': return 'rating_poor';
-    case '一般': return 'rating_average';
-    case '还不错': return 'rating_good';
-    case '很爽': return 'rating_great';
-    case '爽到爆炸': return 'rating_excellent';
-    case '人生巅峰': return 'rating_perfect';
-    case '请输入年薪': return 'rating_enter_salary';
+    case '鎯ㄧ粷浜哄': return 'rating_terrible';
+    case '鐣ユ儴': return 'rating_poor';
+    case '涓€鑸?: return 'rating_average';
+    case '杩樹笉閿?: return 'rating_good';
+    case '寰堢埥': return 'rating_great';
+    case '鐖藉埌鐖嗙偢': return 'rating_excellent';
+    case '浜虹敓宸呭嘲': return 'rating_perfect';
+    case '璇疯緭鍏ュ勾钖?: return 'rating_enter_salary';
     default: return assessment;
   }
 };
 
-// 获取CSS颜色代码
+// 鑾峰彇CSS棰滆壊浠ｇ爜
 const getColorFromClassName = (className: string): string => {
   switch(className) {
     case 'text-pink-800': return '#9d174d';
@@ -100,7 +99,7 @@ const getColorFromClassName = (className: string): string => {
   }
 };
 
-// 获取城市名称
+// 鑾峰彇鍩庡競鍚嶇О
 const getCityName = (cityFactor: string, t: (key: string) => string): string => {
   if (cityFactor === '0.70') return t('city_tier1');
   else if (cityFactor === '0.80') return t('city_newtier1');
@@ -109,10 +108,10 @@ const getCityName = (cityFactor: string, t: (key: string) => string): string => 
   else if (cityFactor === '1.25') return t('city_tier4');
   else if (cityFactor === '1.40') return t('city_county');
   else if (cityFactor === '1.50') return t('city_town');
-  return t('city_tier3'); // 默认值
+  return t('city_tier3'); // 榛樿鍊?
 };
 
-// 获取工作环境描述
+// 鑾峰彇宸ヤ綔鐜鎻忚堪
 const getWorkEnvironmentDesc = (env: string, t: (key: string) => string): string => {
   if (env === '0.8') return t('env_remote');
   else if (env === '0.9') return t('env_factory');
@@ -121,7 +120,7 @@ const getWorkEnvironmentDesc = (env: string, t: (key: string) => string): string
   return t('env_normal');
 };
 
-// 获取领导评价
+// 鑾峰彇棰嗗璇勪环
 const getLeadershipDesc = (rating: string, t: (key: string) => string): string => {
   if (rating === '0.7') return t('leader_bad');
   else if (rating === '0.9') return t('leader_strict');
@@ -131,7 +130,7 @@ const getLeadershipDesc = (rating: string, t: (key: string) => string): string =
   return t('leader_normal');
 };
 
-// 获取同事环境评价
+// 鑾峰彇鍚屼簨鐜璇勪环
 const getTeamworkDesc = (rating: string, t: (key: string) => string): string => {
   if (rating === '0.9') return t('team_bad');
   else if (rating === '1.0') return t('team_normal');
@@ -140,7 +139,7 @@ const getTeamworkDesc = (rating: string, t: (key: string) => string): string => 
   return t('team_normal');
 };
 
-// 获取班车服务描述
+// 鑾峰彇鐝溅鏈嶅姟鎻忚堪
 const getShuttleDesc = (shuttle: string, t: (key: string) => string): string => {
   if (shuttle === '1.0') return t('shuttle_none');
   else if (shuttle === '0.9') return t('shuttle_inconvenient');
@@ -149,7 +148,7 @@ const getShuttleDesc = (shuttle: string, t: (key: string) => string): string => 
   return t('shuttle_none');
 };
 
-// 获取食堂情况描述
+// 鑾峰彇椋熷爞鎯呭喌鎻忚堪
 const getCanteenDesc = (canteen: string, t: (key: string) => string): string => {
   if (canteen === '1.0') return t('canteen_none');
   else if (canteen === '1.05') return t('canteen_average');
@@ -158,7 +157,7 @@ const getCanteenDesc = (canteen: string, t: (key: string) => string): string => 
   return t('canteen_none');
 };
 
-// 获取合同类型描述
+// 鑾峰彇鍚堝悓绫诲瀷鎻忚堪
 const getJobStabilityDesc = (type: string, t: (key: string) => string): string => {
   if (type === 'private') return t('job_private');
   else if (type === 'foreign') return t('job_foreign');
@@ -169,7 +168,7 @@ const getJobStabilityDesc = (type: string, t: (key: string) => string): string =
   return t('job_private');
 };
 
-// 获取学历描述
+// 鑾峰彇瀛﹀巻鎻忚堪
 const getDegreeDesc = (type: string, t: (key: string) => string): string => {
   if (type === 'belowBachelor') return t('below_bachelor');
   else if (type === 'bachelor') return t('bachelor');
@@ -178,7 +177,7 @@ const getDegreeDesc = (type: string, t: (key: string) => string): string => {
   return t('bachelor');
 };
 
-// 获取学校类型描述
+// 鑾峰彇瀛︽牎绫诲瀷鎻忚堪
 const getSchoolTypeDesc = (type: string, degree: string, t: (key: string) => string): string => {
   if (type === 'secondTier') return t('school_second_tier');
   else if (type === 'firstTier') {
@@ -192,18 +191,18 @@ const getSchoolTypeDesc = (type: string, degree: string, t: (key: string) => str
   return t('school_first_tier_bachelor');
 };
 
-// 获取emoji表情
+// 鑾峰彇emoji琛ㄦ儏
 const getEmoji = (value: number): string => {
-  if (value < 0.6) return '😭';
-  if (value < 1.0) return '😔';
-  if (value <= 1.8) return '😐';
-  if (value <= 2.5) return '😊';
-  if (value <= 3.2) return '😁';
-  if (value <= 4.0) return '🤩';
-  return '🎉';
+  if (value < 0.6) return '馃槶';
+  if (value < 1.0) return '馃様';
+  if (value <= 1.8) return '馃槓';
+  if (value <= 2.5) return '馃槉';
+  if (value <= 3.2) return '馃榿';
+  if (value <= 4.0) return '馃ぉ';
+  return '馃帀';
 };
 
-// 获取工作年限描述
+// 鑾峰彇宸ヤ綔骞撮檺鎻忚堪
 const getWorkYearsDesc = (years: string, t: (key: string) => string): string => {
   if (years === '0') return t('fresh_graduate');
   else if (years === '1') return t('years_1_3');
@@ -215,15 +214,15 @@ const getWorkYearsDesc = (years: string, t: (key: string) => string): string => 
   return t('fresh_graduate');
 };
 
-// 获取当前语言环境下的国家名称
+// 鑾峰彇褰撳墠璇█鐜涓嬬殑鍥藉鍚嶇О
 const getCountryName = (countryCode: string, currentLanguage: string): string => {
   if (currentLanguage === 'en') {
     return countryNames.en[countryCode] || countryCode || 'Unknown';
   }
   if (currentLanguage === 'ja') {
-    return countryNames.ja[countryCode] || countryCode || '不明';
+    return countryNames.ja[countryCode] || countryCode || '涓嶆槑';
   }
-  return countryNames.zh[countryCode] || countryCode || '未知';
+  return countryNames.zh[countryCode] || countryCode || '鏈煡';
 };
 
 const formatNumber = (value: number) => {
@@ -236,35 +235,34 @@ const formatNumber = (value: number) => {
 
 const ShareCard: React.FC<ShareCardProps> = (props) => {
   const reportRef = useRef<HTMLDivElement>(null);
-  const simpleReportRef = useRef<HTMLDivElement>(null); // 添加简化版报告的引用
+  const simpleReportRef = useRef<HTMLDivElement>(null); // 娣诲姞绠€鍖栫増鎶ュ憡鐨勫紩鐢?
   const [isDownloading, setIsDownloading] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
   const { t, language } = useLanguage();
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-  const shouldHighlightLawyerAd = parseFloat(props.value) < 1 || props.jobStability === 'private';
   
-  // 客户端渲染标志
+  // 瀹㈡埛绔覆鏌撴爣蹇?
   const [isClient, setIsClient] = useState(false);
   
-  // 确保只在客户端执行
+  // 纭繚鍙湪瀹㈡埛绔墽琛?
   useEffect(() => {
     setIsClient(true);
   }, []);
   
-  // 页面载入动画效果
+  // 椤甸潰杞藉叆鍔ㄧ敾鏁堟灉
   useEffect(() => {
-    // 确保只在客户端执行
+    // 纭繚鍙湪瀹㈡埛绔墽琛?
     if (typeof window !== 'undefined') {
       setFadeIn(true);
     }
   }, []);
 
-  // 生成个性化评价
+  // 鐢熸垚涓€у寲璇勪环
   const personalizedComments = (() => {
     const comments = [];
     const valueNum = parseFloat(props.value);
     
-    // 1. 根据总体性价比生成主评价
+    // 1. 鏍规嵁鎬讳綋鎬т环姣旂敓鎴愪富璇勪环
     let mainComment = "";
     if (valueNum < 0.6) {
       mainComment = t('share_low_value_assessment_1');
@@ -290,12 +288,12 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
       ]
     });
     
-    // 2. 工作城市评价
+    // 2. 宸ヤ綔鍩庡競璇勪环
     const cityName = getCityName(props.cityFactor, t);
     const isHomeTown = props.homeTown === 'yes';
     let cityComment = "";
     
-    // 先根据城市等级添加评价
+    // 鍏堟牴鎹煄甯傜瓑绾ф坊鍔犺瘎浠?
     if (props.cityFactor === '0.70' || props.cityFactor === '0.80') {
       cityComment = t('share_tier1andnewtier1_city_comment');
     } else if (props.cityFactor === '1.0' || props.cityFactor === '1.10') {
@@ -304,7 +302,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
       cityComment = t('share_tier4andbelow_city_comment');
     }
     
-    // 然后添加家乡相关评价
+    // 鐒跺悗娣诲姞瀹朵埂鐩稿叧璇勪环
     if (isHomeTown) {
       cityComment += " " + t('share_hometown_comment');
     } else {
@@ -314,7 +312,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
     comments.push({ 
       title: t('share_work_city'), 
       content: cityComment, 
-      emoji: isHomeTown ? "🏡" : "🌆",
+      emoji: isHomeTown ? "馃彙" : "馃寙",
       details: [
         { label: t('share_work_city'), value: cityName },
         { label: t('share_is_hometown'), value: isHomeTown ? t('share_yes') : t('share_no') },
@@ -322,7 +320,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
       ]
     });
     
-    // 3. 通勤与WFH评价
+    // 3. 閫氬嫟涓嶹FH璇勪环
     const commuteHoursNum = parseFloat(props.commuteHours);
     const wfhDaysNum = parseFloat(props.wfhDaysPerWeek);
     const workDaysNum = parseFloat(props.workDaysPerWeek);
@@ -344,7 +342,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
       commuteComment += " " + t('share_wfh_medium');
     }
     
-    // 只有当用户勾选了班车选项，且班车对通勤有正面影响时才添加评价
+    // 鍙湁褰撶敤鎴峰嬀閫変簡鐝溅閫夐」锛屼笖鐝溅瀵归€氬嫟鏈夋闈㈠奖鍝嶆椂鎵嶆坊鍔犺瘎浠?
     if (props.hasShuttle && (props.shuttle === '0.7' || props.shuttle === '0.5')) {
       commuteComment += " " + t('share_shuttle_service_good');
     }
@@ -354,7 +352,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
       { label: t('share_remote_work'), value: `${props.wfhDaysPerWeek}/${props.workDaysPerWeek} ${t('share_days_per_week')} (${Math.round(wfhRatio * 100)}%)` }
     ];
     
-    // 只有当用户勾选了班车选项时才添加班车信息
+    // 鍙湁褰撶敤鎴峰嬀閫変簡鐝溅閫夐」鏃舵墠娣诲姞鐝溅淇℃伅
     if (props.hasShuttle) {
       commuteDetails.push({ label: t('share_shuttle_service'), value: getShuttleDesc(props.shuttle, t) });
     }
@@ -362,11 +360,11 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
     comments.push({ 
       title: t('share_daily_commute_hours'), 
       content: commuteComment, 
-      emoji: wfhRatio >= 0.5 ? "🏠" : "🚌",
+      emoji: wfhRatio >= 0.5 ? "馃彔" : "馃殞",
       details: commuteDetails
     });
     
-    // 4. 工作环境与人际关系评价
+    // 4. 宸ヤ綔鐜涓庝汉闄呭叧绯昏瘎浠?
     const leadershipRating = props.leadership;
     const teamworkRating = props.teamwork;
     const workEnvironment = props.workEnvironment;
@@ -381,7 +379,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
       environmentComment = t('share_normal_environment');
     }
     
-    // 更细致的领导关系评价
+    // 鏇寸粏鑷寸殑棰嗗鍏崇郴璇勪环
     if (leadershipRating === '1.3') {
       environmentComment += " " + t('share_leadership_excellent');
     } else if (leadershipRating === '1.1') {
@@ -394,7 +392,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
       environmentComment += " " + t('share_leadership_bad');
     }
     
-    // 更细致的同事关系评价
+    // 鏇寸粏鑷寸殑鍚屼簨鍏崇郴璇勪环
     if (teamworkRating === '1.2') {
       environmentComment += " " + t('share_teamwork_excellent');
     } else if (teamworkRating === '1.1') {
@@ -411,7 +409,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
       { label: t('share_colleague_relationship'), value: getTeamworkDesc(teamworkRating, t) }
     ];
     
-    // 只有当用户勾选了食堂选项时才添加食堂信息
+    // 鍙湁褰撶敤鎴峰嬀閫変簡椋熷爞閫夐」鏃舵墠娣诲姞椋熷爞淇℃伅
     if (props.hasCanteen) {
       environmentDetails.push({ label: t('share_canteen_quality'), value: getCanteenDesc(props.canteen, t) });
     }
@@ -419,11 +417,11 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
     comments.push({ 
       title: t('share_work_environment_title'), 
       content: environmentComment, 
-      emoji: "🏢",
+      emoji: "馃彚",
       details: environmentDetails
     });
     
-    // 5. 工作时间与强度评价
+    // 5. 宸ヤ綔鏃堕棿涓庡己搴﹁瘎浠?
     const workHoursNum = parseFloat(props.workHours);
     const restTimeNum = parseFloat(props.restTime);
     const effectiveWorkTime = workHoursNum + parseFloat(props.commuteHours) - 0.5 * restTimeNum;
@@ -455,7 +453,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
     comments.push({ 
       title: t('share_work_hours_title'), 
       content: workTimeComment, 
-      emoji: "⏱️",
+      emoji: "鈴憋笍",
       details: [
         { label: t('work_hours'), value: `${props.workHours} ${t('share_hours')}` },
         { label: t('share_daily_work_hours'), value: `${effectiveWorkTime.toFixed(1)} ${t('share_hours')}` },
@@ -466,7 +464,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
       ]
     });
     
-    // 6. 教育背景与职业发展评价
+    // 6. 鏁欒偛鑳屾櫙涓庤亴涓氬彂灞曡瘎浠?
     const degreeType = props.degreeType;
     const workYears = props.workYears;
     const jobStability = props.jobStability;
@@ -503,7 +501,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
     comments.push({ 
       title: t('share_education_and_experience'), 
       content: careerComment, 
-      emoji: "📚",
+      emoji: "馃摎",
       details: [
         { label: t('share_highest_degree'), value: getDegreeDesc(degreeType, t) },
         { label: t('share_school_type_label'), value: getSchoolTypeDesc(props.schoolType, degreeType, t) },
@@ -512,7 +510,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
       ]
     });
 
-    // 7. 未来价值评价
+    // 7. 鏈潵浠峰€艰瘎浠?
     const promotionFactor = getPromotionFactor(props.promotionCycle);
     const hasEquity = parseFloat(props.equityValue || '0') > 0;
     const confidenceFactor = getConfidenceFactor(props.isPublic);
@@ -554,11 +552,11 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
     comments.push({
       title: t('share_future_value'),
       content: futureComment,
-      emoji: promotionFactor > 1 || equityRatio >= 0.2 ? '🚀' : '📈',
+      emoji: promotionFactor > 1 || equityRatio >= 0.2 ? '馃殌' : '馃搱',
       details: futureDetails
     });
     
-    // 8. 薪资评价
+    // 8. 钖祫璇勪环
     const dailySalary = props.dailySalary;
     const isYuan = props.isYuan === 'true';
     
@@ -582,7 +580,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
       }
     }
     
-    // 考虑城市因素
+    // 鑰冭檻鍩庡競鍥犵礌
     if (props.cityFactor === '0.70' || props.cityFactor === '0.80') {
       salaryComment += " " + t('share_high_cost_city');
     } else if (props.cityFactor === '1.25' || props.cityFactor === '1.40' || props.cityFactor === '1.50') {
@@ -592,14 +590,14 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
     comments.push({ 
       title: t('share_daily_salary'), 
       content: salaryComment, 
-      emoji: "💰",
+      emoji: "馃挵",
       details: [
         { label: t('share_daily_salary'), value: `${props.currencySymbol}${dailySalary}/${t('share_day')}` },
         { label: t('share_working_days_per_year'), value: `${props.workDaysPerYear} ${t('share_days')}` }
       ]
     });
     
-    // 9. 总结性价比评价
+    // 9. 鎬荤粨鎬т环姣旇瘎浠?
     let valueComment = "";
     if (valueNum < 1.0) {
       valueComment = t('share_value_low');
@@ -612,17 +610,17 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
     comments.push({ 
       title: t('share_summary_advice'), 
       content: valueComment, 
-      emoji: "💎",
+      emoji: "馃拵",
       details: []
     });
     
     return comments;
   })();
   
-  // 是否是移动设备（响应式设计辅助函数）
+  // 鏄惁鏄Щ鍔ㄨ澶囷紙鍝嶅簲寮忚璁¤緟鍔╁嚱鏁帮級
   const [isMobile, setIsMobile] = useState(false);
   
-  // 检测设备类型
+  // 妫€娴嬭澶囩被鍨?
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const checkMobile = () => {
@@ -634,26 +632,26 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
     }
   }, []);
 
-  // 处理下载图片 - 使用简化版报告
+  // 澶勭悊涓嬭浇鍥剧墖 - 浣跨敤绠€鍖栫増鎶ュ憡
   const handleDownload = async () => {
     if (!simpleReportRef.current || isDownloading) return;
     
     try {
       setIsDownloading(true);
       
-      // 获取简化版报告元素
+      // 鑾峰彇绠€鍖栫増鎶ュ憡鍏冪礌
       const element = simpleReportRef.current;
       
-      // 动态导入html2canvas，确保只在客户端加载
+      // 鍔ㄦ€佸鍏tml2canvas锛岀‘淇濆彧鍦ㄥ鎴风鍔犺浇
       const html2canvasModule = await import('html2canvas');
       const html2canvas = html2canvasModule.default;
 
-      // 修复 html2canvas 在处理 rem 时文字基线问题
+      // 淇 html2canvas 鍦ㄥ鐞?rem 鏃舵枃瀛楀熀绾块棶棰?
       const style = document.createElement('style');
       document.head.appendChild(style);
       style.sheet?.insertRule('body > div:last-child img { display: inline-block; }');
       
-      // 使用html2canvas生成图片
+      // 浣跨敤html2canvas鐢熸垚鍥剧墖
       const canvas = await html2canvas(element, {
         scale: 2,
         backgroundColor: '#FFFFFF',
@@ -662,10 +660,10 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
         logging: false
       });
 
-      // 生成 canvas 后移除临时的 style 标签
+      // 鐢熸垚 canvas 鍚庣Щ闄や复鏃剁殑 style 鏍囩
       style.remove();
       
-      // 转换为图片并下载
+      // 杞崲涓哄浘鐗囧苟涓嬭浇
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = image;
@@ -673,14 +671,14 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
       link.click();
       
     } catch (error) {
-      console.error('生成分享图片失败:', error);
-      alert('生成分享图片失败，请稍后再试');
+      console.error('鐢熸垚鍒嗕韩鍥剧墖澶辫触:', error);
+      alert('鐢熸垚鍒嗕韩鍥剧墖澶辫触锛岃绋嶅悗鍐嶈瘯');
     } finally {
       setIsDownloading(false);
     }
   };
 
-  // 获取背景样式
+  // 鑾峰彇鑳屾櫙鏍峰紡
   const getBackground = () => {
     const valueNum = parseFloat(props.value);
     if (valueNum < 0.6) return 'from-pink-100 to-red-100 dark:from-pink-900 dark:to-red-900';
@@ -694,7 +692,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${getBackground()} flex flex-col items-center justify-start p-4 md:p-8 transition-opacity duration-1000 ${fadeIn ? 'opacity-100' : 'opacity-0'} dark:text-white`}>
-      {/* 返回按钮 */}
+      {/* 杩斿洖鎸夐挳 */}
       <div className="w-full max-w-4xl mb-4 md:mb-6">
         <Link href="/" className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -703,9 +701,9 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
       </div>
       
       <div ref={reportRef} className="w-full max-w-4xl bg-white rounded-xl shadow-xl p-4 md:p-10">
-        {/* 标题 - 移动端更紧凑 */}
+        {/* 鏍囬 - 绉诲姩绔洿绱у噾 */}
         <div className="mb-5 md:mb-10 text-center">
-          <div className="text-4xl md:text-6xl mb-2 md:mb-4">{isClient ? getEmoji(parseFloat(props.value)) : '😊'}</div>
+          <div className="text-4xl md:text-6xl mb-2 md:mb-4">{isClient ? getEmoji(parseFloat(props.value)) : '馃槉'}</div>
           <h1 className="text-xl md:text-3xl font-bold mb-2 md:mb-3 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
             {t('share_your_job_worth_report')}
           </h1>
@@ -717,7 +715,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
           </div>
         </div>
         
-        {/* 性价比评语卡片 - 移动端更紧凑 */}
+        {/* 鎬т环姣旇瘎璇崱鐗?- 绉诲姩绔洿绱у噾 */}
         <div className="space-y-4 md:space-y-6">
           {isClient && personalizedComments.map((comment, index) => (
             <React.Fragment key={index}>
@@ -728,7 +726,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
                     <h3 className="text-base md:text-lg font-bold mb-1 md:mb-2 text-gray-800">{comment.title}</h3>
                     <p className="text-xs md:text-sm text-gray-700 leading-relaxed mb-2 md:mb-3">{comment.content}</p>
                     
-                    {/* 用户选项详情 - 移动端使用行内排列 */}
+                    {/* 鐢ㄦ埛閫夐」璇︽儏 - 绉诲姩绔娇鐢ㄨ鍐呮帓鍒?*/}
                     {comment.details && comment.details.length > 0 && (
                       <div className="mt-2 pt-2 border-t border-gray-200">
                         <div className={isMobile ? "flex flex-wrap gap-x-4 gap-y-1.5" : "grid grid-cols-2 gap-2"}>
@@ -754,18 +752,16 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
 
             </React.Fragment>
           ))}
-
-          <LawyerAd highlight={shouldHighlightLawyerAd} />
         </div>
         
-        {/* 底部信息 - 更小的文字 */}
+        {/* 搴曢儴淇℃伅 - 鏇村皬鐨勬枃瀛?*/}
         <div className="mt-6 md:mt-10 text-center text-gray-500 space-y-0.5 text-xs md:text-sm">
           <div>{t('share_custom_made')}</div>
           <div>worthjob.zippland.com</div>
         </div>
       </div>
       
-      {/* 操作按钮 - 更小的按钮 */}
+      {/* 鎿嶄綔鎸夐挳 - 鏇村皬鐨勬寜閽?*/}
       <div className="flex justify-center gap-4 mt-4 md:mt-8">
         <button
           onClick={handleDownload}
@@ -777,12 +773,12 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
         </button>
       </div>
       
-      {/* 简化版报告，仅用于下载，在页面中隐藏 */}
+      {/* 绠€鍖栫増鎶ュ憡锛屼粎鐢ㄤ簬涓嬭浇锛屽湪椤甸潰涓殣钘?*/}
       {isClient && (
         <div className="fixed top-0 left-0 opacity-0 pointer-events-none">
           <div ref={simpleReportRef} className="w-[800px] bg-white p-8 text-gray-900" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-              {/* 报告头部 - 渐变背景 */}
+              {/* 鎶ュ憡澶撮儴 - 娓愬彉鑳屾櫙 */}
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-8 border-b border-gray-200">
                 <div className="text-center">
                   <div className="text-5xl mb-4">{getEmoji(parseFloat(props.value))}</div>
@@ -795,14 +791,14 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
                 </div>
               </div>
               
-              {/* 报告内容 */}
+              {/* 鎶ュ憡鍐呭 */}
               <div className="p-6">
-                {/* 数据表格 */}
+                {/* 鏁版嵁琛ㄦ牸 */}
                 <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                  {/* 基础信息 */}
+                  {/* 鍩虹淇℃伅 */}
                   <div className="col-span-2 mb-4">
                     <h2 className="font-bold text-gray-800 text-lg pb-2 mb-3 border-b border-gray-200 flex items-center">
-                      <span className="mr-2">📊</span> {t('share_basic_info')}
+                      <span className="mr-2">馃搳</span> {t('share_basic_info')}
                     </h2>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-gray-50 p-3 rounded-lg">
@@ -832,10 +828,10 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
                     </div>
                   </div>
                   
-                  {/* 工作时间 */}
+                  {/* 宸ヤ綔鏃堕棿 */}
                   <div className="col-span-1">
                     <h2 className="font-bold text-gray-800 text-lg pb-2 mb-3 border-b border-gray-200 flex items-center">
-                      <span className="mr-2">⏱️</span> {t('share_work_hours_title')}
+                      <span className="mr-2">鈴憋笍</span> {t('share_work_hours_title')}
                     </h2>
                     <div className="space-y-3">
                       <div className="bg-gray-50 p-3 rounded-lg flex justify-between">
@@ -863,10 +859,10 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
                     </div>
                   </div>
                   
-                  {/* 工作环境 */}
+                  {/* 宸ヤ綔鐜 */}
                   <div className="col-span-1">
                     <h2 className="font-bold text-gray-800 text-lg pb-2 mb-3 border-b border-gray-200 flex items-center">
-                      <span className="mr-2">🏢</span> {t('share_work_environment_title')}
+                      <span className="mr-2">馃彚</span> {t('share_work_environment_title')}
                     </h2>
                     <div className="space-y-3">
                       <div className="bg-gray-50 p-3 rounded-lg flex justify-between">
@@ -890,10 +886,10 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
                     </div>
                   </div>
                   
-                  {/* 教育背景 */}
+                  {/* 鏁欒偛鑳屾櫙 */}
                   <div className="col-span-2 mt-2">
                     <h2 className="font-bold text-gray-800 text-lg pb-2 mb-3 border-b border-gray-200 flex items-center">
-                      <span className="mr-2">📚</span> {t('share_education_and_experience')}
+                      <span className="mr-2">馃摎</span> {t('share_education_and_experience')}
                     </h2>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-gray-50 p-3 rounded-lg">
@@ -915,10 +911,10 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
                     </div>
                   </div>
 
-                  {/* 未来价值 */}
+                  {/* 鏈潵浠峰€?*/}
                   <div className="col-span-2 mt-2">
                     <h2 className="font-bold text-gray-800 text-lg pb-2 mb-3 border-b border-gray-200 flex items-center">
-                      <span className="mr-2">🚀</span> {t('share_future_value')}
+                      <span className="mr-2">馃殌</span> {t('share_future_value')}
                     </h2>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-gray-50 p-3 rounded-lg">
@@ -944,11 +940,11 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
                     </div>
                   </div>
                   
-                  {/* 结论 */}
+                  {/* 缁撹 */}
                   <div className="col-span-2 mt-4">
                     <div className="rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 p-6 border border-gray-200">
                       <h2 className="font-bold text-gray-800 text-lg mb-3 flex items-center">
-                        <span className="mr-2">💎</span> {t('share_final_assessment')}
+                        <span className="mr-2">馃拵</span> {t('share_final_assessment')}
                       </h2>
                       <div className="flex items-center mb-3">
                         <div className="text-4xl mr-3">{getEmoji(parseFloat(props.value))}</div>
@@ -969,7 +965,7 @@ const ShareCard: React.FC<ShareCardProps> = (props) => {
                 </div>
               </div>
               
-              {/* 页脚 */}
+              {/* 椤佃剼 */}
               <div className="bg-gray-50 py-4 px-6 border-t border-gray-200">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { LanguageProvider } from "@/components/LanguageContext";
@@ -17,8 +17,8 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: "李律帮你看这b班上得值不值",
-    template: "%s | 李律帮你看这b班上得值不值"
+    default: "鏉庡緥甯綘鐪嬭繖b鐝笂寰楀€间笉鍊?,
+    template: "%s | 鏉庡緥甯綘鐪嬭繖b鐝笂寰楀€间笉鍊?
   },
   alternates: {
     languages: {
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
       "zh-CN": "/",
     },
   },
-  description: "李律帮你看这b班上得值不值，计算你的工作性价比、未来价值与职业回报。",
+  description: "鏉庡緥甯綘鐪嬭繖b鐝笂寰楀€间笉鍊硷紝璁＄畻浣犵殑宸ヤ綔鎬т环姣斻€佹湭鏉ヤ环鍊间笌鑱屼笟鍥炴姤銆?,
   verification: {
     google: "_OQGiIpYz87USAsgJV2C07-JJhQ8myV_4GoM1kDjFic",
   },
@@ -42,7 +42,6 @@ export default function RootLayout({
       <head>
         <meta name="google-site-verification" content="_OQGiIpYz87USAsgJV2C07-JJhQ8myV_4GoM1kDjFic" />
         <meta name="baidu-site-verification" content="codeva-pEoMg5F0Cv" />
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7207313144293144" crossOrigin="anonymous"></script>
         <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
       </head>
       <body
@@ -81,7 +80,7 @@ export default function RootLayout({
                     <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
                   </svg>
                 </div>
-                <span className="text-xs mt-1.5 text-gray-700 dark:text-gray-300 font-medium">城市对比</span>
+                <span className="text-xs mt-1.5 text-gray-700 dark:text-gray-300 font-medium">鍩庡競瀵规瘮</span>
               </a>
               
               <a 
@@ -95,7 +94,7 @@ export default function RootLayout({
                     <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
                   </svg>
                 </div>
-                <span className="text-xs mt-1.5 text-gray-700 dark:text-gray-300 font-medium">AI笔试</span>
+                <span className="text-xs mt-1.5 text-gray-700 dark:text-gray-300 font-medium">AI绗旇瘯</span>
               </a>
               
               <a 
@@ -109,11 +108,11 @@ export default function RootLayout({
                     <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                   </svg>
                 </div>
-                <span className="text-xs mt-1.5 text-gray-700 dark:text-gray-300 font-medium">拼豆图纸</span>
+                <span className="text-xs mt-1.5 text-gray-700 dark:text-gray-300 font-medium">鎷艰眴鍥剧焊</span>
               </a>
             </div>
             <div className="text-center">
-              <span className="text-[10px] text-gray-400 dark:text-gray-500">更多实用工具 by zippland.com</span>
+              <span className="text-[10px] text-gray-400 dark:text-gray-500">鏇村瀹炵敤宸ュ叿 by zippland.com</span>
             </div>
           </div>
         </footer>
